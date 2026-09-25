@@ -44,12 +44,30 @@ module "bedrock_guardrails" {
 
       sensitive_information_policy_config = {
         pii_entities_config = [
+          # Simple form: `action` applies to both input and output.
           {
             action = "BLOCK"
             type   = "EMAIL"
+          },
+          # Per-side form (AWS provider >= 6.x): mask on output only, let it reach the model
+          # on input. If input_action/output_action are omitted they fall back to `action`.
+          {
+            type          = "CREDIT_DEBIT_CARD_NUMBER"
+            action        = "ANONYMIZE"
+            input_action  = "NONE"
+            output_action = "ANONYMIZE"
           }
         ]
-        regexes_config = []
+        regexes_config = [
+          {
+            name          = "ACCOUNT_ID"
+            description   = "Internal account identifier"
+            pattern       = "ACC-[0-9]{6}"
+            action        = "ANONYMIZE"
+            input_action  = "NONE"
+            output_action = "ANONYMIZE"
+          }
+        ]
       }
 
       topic_policy_config = {
@@ -78,6 +96,8 @@ module "bedrock_guardrails" {
 
       create_version      = true
       version_description = "Initial version"
+      # Republish a new version on any policy change and keep older versions.
+      skip_destroy = true
 
       additional_tags = {
         Purpose = "content-moderation"

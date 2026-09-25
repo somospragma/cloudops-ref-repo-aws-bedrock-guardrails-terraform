@@ -24,14 +24,22 @@ variable "guardrails_config" {
 
     sensitive_information_policy_config = optional(object({
       pii_entities_config = list(object({
-        action = string
-        type   = string
+        type           = string
+        action         = string
+        input_action   = optional(string)
+        output_action  = optional(string)
+        input_enabled  = optional(bool, true)
+        output_enabled = optional(bool, true)
       }))
       regexes_config = list(object({
-        action      = string
-        description = string
-        name        = string
-        pattern     = string
+        name           = string
+        description    = string
+        pattern        = string
+        action         = string
+        input_action   = optional(string)
+        output_action  = optional(string)
+        input_enabled  = optional(bool, true)
+        output_enabled = optional(bool, true)
       }))
     }))
 
@@ -55,8 +63,42 @@ variable "guardrails_config" {
 
     create_version      = optional(bool, false)
     version_description = optional(string)
+    skip_destroy        = optional(bool, false)
     additional_tags     = optional(map(string), {})
   }))
+
+  validation {
+    condition = alltrue(flatten([
+      for g in values(var.guardrails_config) : [
+        for f in try(g.content_policy_config.filters_config, []) :
+        contains(["NONE", "LOW", "MEDIUM", "HIGH"], f.input_strength) &&
+        contains(["NONE", "LOW", "MEDIUM", "HIGH"], f.output_strength)
+      ]
+    ]))
+    error_message = "content_policy_config filter strengths must be NONE, LOW, MEDIUM or HIGH."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for g in values(var.guardrails_config) : concat(
+        [for p in try(g.sensitive_information_policy_config.pii_entities_config, []) :
+        contains(["BLOCK", "ANONYMIZE", "NONE"], p.action)],
+        [for r in try(g.sensitive_information_policy_config.regexes_config, []) :
+        contains(["BLOCK", "ANONYMIZE", "NONE"], r.action)]
+      )
+    ]))
+    error_message = "pii_entities_config and regexes_config actions must be BLOCK, ANONYMIZE or NONE."
+  }
+
+  validation {
+    condition = alltrue(flatten([
+      for g in values(var.guardrails_config) : [
+        for r in try(g.sensitive_information_policy_config.regexes_config, []) :
+        length(r.pattern) <= 500
+      ]
+    ]))
+    error_message = "A guardrail regex pattern is at most 500 characters."
+  }
 }
 
 
@@ -92,4 +134,4 @@ variable "aws_role_arn" {
 variable "aws_region" {
   description = "AWS region for cli execution"
   type        = string
-} 
+}

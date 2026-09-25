@@ -27,18 +27,26 @@ resource "aws_bedrock_guardrail" "this" {
       dynamic "pii_entities_config" {
         for_each = sensitive_information_policy_config.value.pii_entities_config
         content {
-          action = pii_entities_config.value.action
-          type   = pii_entities_config.value.type
+          type           = pii_entities_config.value.type
+          action         = pii_entities_config.value.action
+          input_action   = coalesce(pii_entities_config.value.input_action, pii_entities_config.value.action)
+          output_action  = coalesce(pii_entities_config.value.output_action, pii_entities_config.value.action)
+          input_enabled  = pii_entities_config.value.input_enabled
+          output_enabled = pii_entities_config.value.output_enabled
         }
       }
 
       dynamic "regexes_config" {
         for_each = sensitive_information_policy_config.value.regexes_config
         content {
-          action      = regexes_config.value.action
-          description = regexes_config.value.description
-          name        = regexes_config.value.name
-          pattern     = regexes_config.value.pattern
+          name           = regexes_config.value.name
+          description    = regexes_config.value.description
+          pattern        = regexes_config.value.pattern
+          action         = regexes_config.value.action
+          input_action   = coalesce(regexes_config.value.input_action, regexes_config.value.action)
+          output_action  = coalesce(regexes_config.value.output_action, regexes_config.value.action)
+          input_enabled  = regexes_config.value.input_enabled
+          output_enabled = regexes_config.value.output_enabled
         }
       }
     }
@@ -96,4 +104,9 @@ resource "aws_bedrock_guardrail_version" "this" {
 
   guardrail_arn = aws_bedrock_guardrail.this[each.key].guardrail_arn
   description   = each.value.version_description
+  skip_destroy  = each.value.skip_destroy
+
+  lifecycle {
+    replace_triggered_by = [aws_bedrock_guardrail.this[each.key]]
+  }
 }
