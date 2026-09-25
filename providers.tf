@@ -7,7 +7,7 @@ terraform {
     aws = {
       configuration_aliases = [aws.project]
       source                = "hashicorp/aws"
-      version               = "~> 5.0"
+      version               = ">= 6.24"
     }
     null = {
       source  = "hashicorp/null"

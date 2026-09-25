@@ -6,14 +6,20 @@ Este módulo de Terraform permite crear y gestionar **AWS Bedrock Guardrails** d
 
 El módulo está diseñado para soportar múltiples guardrails simultáneamente mediante una configuración basada en mapas, facilitando la gestión de diferentes políticas de moderación según los requisitos específicos de cada aplicación.
 
+## Diagrama de Arquitectura
+
+![AWS Bedrock Guardrails Architecture](./generated-diagrams/aws_bedrock_guardrails_architecture.png)
+
+La arquitectura muestra cómo los guardrails actúan como una capa de seguridad entre las aplicaciones de usuario y los modelos fundacionales de Amazon Bedrock, aplicando múltiples políticas de filtrado antes de procesar las solicitudes.
+
 ## Características Principales
 
 - **Gestión Multi-Guardrail**: Soporte para crear múltiples guardrails con configuraciones independientes
-- **Políticas de Contenido**: Filtrado de contenido sexual, violento, odio y acoso
+- **Políticas de Contenido**: Filtrado de contenido sexual, violento, odio, insultos y mala conducta
 - **Protección de Información Sensible**: Detección y bloqueo de PII (información personal identificable)
 - **Control de Temas**: Restricción de temas específicos mediante definiciones personalizadas
 - **Filtrado de Palabras**: Listas de palabras gestionadas y personalizadas
-- **Acciones PII/Regex por lado**: Control independiente de entrada y salida (`input_action`, `output_action`, `input_enabled`, `output_enabled`), permitiendo, por ejemplo, que un dato llegue al modelo en la entrada y se enmascare solo en la salida
+- **Acciones PII/Regex por lado**: Control independiente de entrada y salida (`input_action`, `output_action`, `input_enabled`, `output_enabled`)
 - **Republicación Automática de Versiones**: Al cambiar cualquier política se publica una nueva versión; las anteriores se conservan mediante `skip_destroy`
 - **Etiquetado Consistente**: Sistema de etiquetado estandarizado con nomenclatura corporativa
 - **Configuración Flexible**: Parámetros opcionales con valores por defecto sensatos y retrocompatibles
@@ -22,17 +28,17 @@ El módulo está diseñado para soportar múltiples guardrails simultáneamente 
 
 ```
 cloudops-ref-repo-aws-bedrock-guardrails-terraform/
-├── main.tf              # Recursos principales del módulo
-├── variables.tf         # Definición de variables de entrada
-├── outputs.tf           # Valores de salida del módulo
-├── providers.tf         # Configuración de providers requeridos
-├── README.md           # Documentación básica
-├── DOCUMENTATION.md    # Documentación completa (este archivo)
-├── .gitignore          # Archivos excluidos del control de versiones
-└── sample/             # Ejemplos de implementación
-    ├── main.tf         # Ejemplo de uso del módulo
-    ├── providers.tf    # Provider AWS y required_providers del ejemplo
-    └── outputs.tf      # Outputs del ejemplo
+├── main.tf                    # Recursos principales del módulo
+├── variables.tf               # Definición de variables de entrada
+├── outputs.tf                 # Valores de salida del módulo
+├── providers.tf               # Configuración de providers requeridos
+├── README.md                  # Documentación básica
+├── DOCUMENTATION.md           # Documentación completa (este archivo)
+├── .gitignore                 # Archivos excluidos del control de versiones
+├── generated-diagrams/        # Diagramas de arquitectura generados
+└── sample/                    # Ejemplos de implementación
+    ├── main.tf                # Ejemplo de uso del módulo
+    └── outputs.tf             # Outputs del ejemplo
 ```
 
 ## Implementación y Configuración
@@ -42,7 +48,7 @@ cloudops-ref-repo-aws-bedrock-guardrails-terraform/
 - **Terraform**: >= 1.0
 - **AWS Provider**: >= 6.24 (los atributos por lado `input_action`/`output_action`/`input_enabled`/`output_enabled` requieren el provider AWS 6.x)
 - **Permisos AWS**: Acceso a Amazon Bedrock y capacidad de crear guardrails
-- **Región AWS**: Región que soporte Amazon Bedrock
+- **Región AWS**: Región que soporte Amazon Bedrock (us-east-1, us-west-2, eu-west-1, etc.)
 
 ### Configuración Básica
 
@@ -124,7 +130,7 @@ guardrails_config = {
     sensitive_information_policy_config = {
       pii_entities_config = [
         {
-          type           = string           # EMAIL, PHONE, SSN, etc.
+          type           = string           # EMAIL, PHONE, SSN, CREDIT_DEBIT_CARD_NUMBER, etc.
           action         = string           # BLOCK, ANONYMIZE, NONE
           input_action   = optional(string) # Opcional; por defecto toma `action`
           output_action  = optional(string) # Opcional; por defecto toma `action`
@@ -178,9 +184,9 @@ guardrails_config = {
 }
 ```
 
-> **Nota sobre acciones por lado**: `input_action`/`output_action` permiten aplicar acciones distintas a la entrada y a la salida. Si se omiten, ambas heredan el valor de `action` (comportamiento retrocompatible). Un caso típico: `input_action = "NONE"` y `output_action = "ANONYMIZE"` deja que el dato llegue al modelo pero lo enmascara en la respuesta.
+> **Acciones por lado**: `input_action`/`output_action` permiten acciones distintas en entrada y salida. Si se omiten, heredan `action` (retrocompatible). Ejemplo típico: `input_action = "NONE"` + `output_action = "ANONYMIZE"` deja pasar el dato al modelo y lo enmascara en la respuesta.
 
-> **Nota sobre versionado**: cuando `create_version = true`, cualquier cambio en la política del guardrail publica una nueva versión (vía `replace_triggered_by`). Con `skip_destroy = true`, las versiones anteriores se conservan en AWS aunque Terraform deje de gestionarlas.
+> **Versionado**: con `create_version = true`, cualquier cambio de política publica una nueva versión (`replace_triggered_by`); con `skip_destroy = true` las versiones anteriores se conservan en AWS.
 
 ### Variables de Salida
 
@@ -454,22 +460,13 @@ content_policy_config = {
 # Protección completa de PII
 sensitive_information_policy_config = {
   pii_entities_config = [
-    { type = "EMAIL", action = "BLOCK" },
-    { type = "PHONE", action = "BLOCK" },
-    { type = "US_SOCIAL_SECURITY_NUMBER", action = "BLOCK" },
-    # Enmascarar solo en la salida, dejar pasar en la entrada
-    { type = "CREDIT_DEBIT_CARD_NUMBER", action = "ANONYMIZE", input_action = "NONE", output_action = "ANONYMIZE" }
+    { action = "BLOCK", type = "EMAIL" },
+    { action = "BLOCK", type = "PHONE" },
+    { action = "BLOCK", type = "SSN" },
+    { action = "BLOCK", type = "CREDIT_DEBIT_CARD_NUMBER" }
   ]
 }
 ```
-
-### Validaciones Incorporadas
-
-El módulo valida la configuración en tiempo de `plan`:
-
-- **Fuerza de filtros de contenido**: `input_strength`/`output_strength` deben ser `NONE`, `LOW`, `MEDIUM` o `HIGH`.
-- **Acciones**: `action` de `pii_entities_config` y `regexes_config` debe ser `BLOCK`, `ANONYMIZE` o `NONE`.
-- **Longitud de patrones**: cada `pattern` de regex admite un máximo de 500 caracteres.
 
 ## Observaciones y Consideraciones
 
@@ -512,14 +509,6 @@ El módulo valida la configuración en tiempo de `plan`:
 **Última actualización**: Septiembre 2026  
 **Mantenido por**: Equipo CloudOps - Pragma
 
-### Cambios en 1.1.0
-
-- Provider AWS actualizado a `>= 6.24`.
-- Acciones por lado en PII y regex (`input_action`, `output_action`, `input_enabled`, `output_enabled`), opcionales y retrocompatibles.
-- Republicación automática de versión al cambiar la política (`replace_triggered_by`) y retención de versiones anteriores (`skip_destroy`).
-- Validaciones de fuerzas de filtros, acciones y longitud de patrones regex.
-- `sample/` con `providers.tf` propio y ejemplos de los campos nuevos.
-
 ---
 
-> Este módulo ha sido desarrollado siguiendo los estándares de Pragma CloudOps, garantizando una implementación segura, escalable y optimizada que cumple con todas las políticas de la organización. Pragma CloudOps recomienda revisar este código con su equipo de infraestructura antes de implementarlo en producción.
+> Este módulo ha sido desarrollado siguiendo los estándares de Pragma CloudOps, garantizando una implementación segura, escalable y optimizada que cumple con todas las políticas de la organización. Se recomienda revisar este código con su equipo de infraestructura antes de implementarlo en producción.
