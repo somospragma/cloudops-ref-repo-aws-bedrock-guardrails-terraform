@@ -27,6 +27,10 @@ module "bedrock_guardrails" {
     "content-guardrail" = {
       description = "Guardrail for content moderation"
 
+      # Optional: encrypt the guardrail with a customer-managed KMS key (CMK).
+      # If omitted, Bedrock uses the AWS-managed key by default.
+      kms_key_arn = "arn:aws:kms:us-east-1:123456789012:key/abcd1234-a123-456a-a12b-a123b4cd56ef"
+
       content_policy_config = {
         filters_config = [
           {

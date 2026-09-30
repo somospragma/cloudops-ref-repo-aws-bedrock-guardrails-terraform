@@ -13,6 +13,7 @@ variable "guardrails_config" {
     description               = optional(string)
     blocked_input_messaging   = optional(string, "Sorry, the model cannot provide a response to your request.")
     blocked_outputs_messaging = optional(string, "Sorry, the model cannot provide a response to your request.")
+    kms_key_arn               = optional(string)
 
     content_policy_config = optional(object({
       filters_config = list(object({

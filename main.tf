@@ -6,6 +6,7 @@ resource "aws_bedrock_guardrail" "this" {
   description               = each.value.description
   blocked_input_messaging   = each.value.blocked_input_messaging
   blocked_outputs_messaging = each.value.blocked_outputs_messaging
+  kms_key_arn               = each.value.kms_key_arn
 
   dynamic "content_policy_config" {
     for_each = each.value.content_policy_config != null ? [each.value.content_policy_config] : []

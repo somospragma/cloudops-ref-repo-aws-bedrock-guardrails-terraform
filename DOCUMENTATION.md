@@ -116,6 +116,7 @@ guardrails_config = {
     description               = string           # Descripción del guardrail
     blocked_input_messaging   = string           # Mensaje para entradas bloqueadas
     blocked_outputs_messaging = string           # Mensaje para salidas bloqueadas
+    kms_key_arn               = optional(string)  # ARN de llave KMS custom (CMK). Si se omite, usa la llave gestionada por AWS
     
     content_policy_config = {
       filters_config = [
