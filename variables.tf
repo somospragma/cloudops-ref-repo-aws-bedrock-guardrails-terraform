@@ -84,8 +84,8 @@ variable "guardrails_config" {
     condition = alltrue(flatten([
       for g in values(var.guardrails_config) : [
         for f in try(g.content_policy_config.filters_config, []) :
-        (f.input_action == null || contains(["BLOCK", "NONE"], f.input_action)) &&
-        (f.output_action == null || contains(["BLOCK", "NONE"], f.output_action))
+        contains(["BLOCK", "NONE"], coalesce(f.input_action, "BLOCK")) &&
+        contains(["BLOCK", "NONE"], coalesce(f.output_action, "BLOCK"))
       ]
     ]))
     error_message = "content_policy_config filter input_action/output_action must be BLOCK or NONE."
