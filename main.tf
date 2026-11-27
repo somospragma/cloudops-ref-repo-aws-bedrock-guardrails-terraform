@@ -17,6 +17,8 @@ resource "aws_bedrock_guardrail" "this" {
           input_strength  = filters_config.value.input_strength
           output_strength = filters_config.value.output_strength
           type            = filters_config.value.type
+          input_action    = filters_config.value.input_action
+          output_action   = filters_config.value.output_action
         }
       }
     }
