@@ -42,6 +42,13 @@ module "bedrock_guardrails" {
             input_strength  = "HIGH"
             output_strength = "HIGH"
             type            = "VIOLENCE"
+          },
+          # Detection mode: detects and reports in `assessments` without blocking.
+          {
+            input_strength  = "HIGH"
+            output_strength = "NONE" # PROMPT_ATTACK only applies to input
+            type            = "PROMPT_ATTACK"
+            input_action    = "NONE"
           }
         ]
       }

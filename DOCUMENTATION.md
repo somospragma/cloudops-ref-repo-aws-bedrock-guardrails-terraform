@@ -123,7 +123,9 @@ guardrails_config = {
         {
           input_strength  = string  # LOW, MEDIUM, HIGH
           output_strength = string  # LOW, MEDIUM, HIGH
-          type           = string   # SEXUAL, VIOLENCE, HATE, INSULTS, MISCONDUCT
+          type           = string   # SEXUAL, VIOLENCE, HATE, INSULTS, MISCONDUCT, PROMPT_ATTACK
+          input_action   = optional(string)  # BLOCK (default del provider) o NONE: solo detecta y reporta en assessments
+          output_action  = optional(string)  # BLOCK (default del provider) o NONE
         }
       ]
     }

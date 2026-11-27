@@ -20,6 +20,8 @@ variable "guardrails_config" {
         input_strength  = string
         output_strength = string
         type            = string
+        input_action    = optional(string)
+        output_action   = optional(string)
       }))
     }))
 
@@ -77,6 +79,16 @@ variable "guardrails_config" {
       ]
     ]))
     error_message = "content_policy_config filter strengths must be NONE, LOW, MEDIUM or HIGH."
+  }
+  validation {
+    condition = alltrue(flatten([
+      for g in values(var.guardrails_config) : [
+        for f in try(g.content_policy_config.filters_config, []) :
+        (f.input_action == null || contains(["BLOCK", "NONE"], f.input_action)) &&
+        (f.output_action == null || contains(["BLOCK", "NONE"], f.output_action))
+      ]
+    ]))
+    error_message = "content_policy_config filter input_action/output_action must be BLOCK or NONE."
   }
 
   validation {

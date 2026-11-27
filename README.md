@@ -117,7 +117,9 @@ guardrails_config = {
         {
           input_strength  = string  # LOW, MEDIUM, HIGH
           output_strength = string  # LOW, MEDIUM, HIGH
-          type           = string   # SEXUAL, VIOLENCE, HATE, INSULTS, MISCONDUCT
+          type           = string   # SEXUAL, VIOLENCE, HATE, INSULTS, MISCONDUCT, PROMPT_ATTACK
+          input_action   = optional(string)  # BLOCK (default del provider) o NONE: solo detecta y reporta en assessments
+          output_action  = optional(string)  # BLOCK (default del provider) o NONE
         }
       ]
     }
@@ -469,6 +471,7 @@ sensitive_information_policy_config = {
 El módulo valida la configuración en tiempo de `plan`:
 
 - **Fuerza de filtros de contenido**: `input_strength`/`output_strength` deben ser `NONE`, `LOW`, `MEDIUM` o `HIGH`.
+- **Acción de filtros de contenido**: `input_action`/`output_action` (opcionales) deben ser `BLOCK` o `NONE`. Con `NONE` el filtro detecta y lo reporta en `assessments` sin intervenir (modo detección). Requiere AWS provider >= 6.22.
 - **Acciones**: `action` de `pii_entities_config` y `regexes_config` debe ser `BLOCK`, `ANONYMIZE` o `NONE`.
 - **Longitud de patrones**: cada `pattern` de regex admite un máximo de 500 caracteres.
 
